@@ -5,6 +5,7 @@
 #define URL_IDENTIFIER @"public.url"
 #define IMAGE_IDENTIFIER @"public.image"
 #define TEXT_IDENTIFIER (NSString *)kUTTypePlainText
+#define KEYVALUE_IDENTIFIER (NSString *)kUTTypePropertyList
 
 NSExtensionContext* extensionContext;
 UIView* rootView;
@@ -86,9 +87,13 @@ RCT_REMAP_METHOD(data,
         __block NSItemProvider *urlProvider = nil;
         __block NSItemProvider *imageProvider = nil;
         __block NSItemProvider *textProvider = nil;
+        __block NSItemProvider *keyValueProvider = nil;
 
         [attachments enumerateObjectsUsingBlock:^(NSItemProvider *provider, NSUInteger idx, BOOL *stop) {
-            if([provider hasItemConformingToTypeIdentifier:URL_IDENTIFIER]) {
+            if ([provider hasItemConformingToTypeIdentifier:KEYVALUE_IDENTIFIER]){
+                keyValueProvider = provider;
+                *stop = YES;
+            } else if([provider hasItemConformingToTypeIdentifier:URL_IDENTIFIER]) {
                 urlProvider = provider;
                 *stop = YES;
             } else if ([provider hasItemConformingToTypeIdentifier:TEXT_IDENTIFIER]){
@@ -100,7 +105,19 @@ RCT_REMAP_METHOD(data,
             }
         }];
 
-        if(urlProvider) {
+        if (keyValueProvider) {
+            [keyValueProvider loadItemForTypeIdentifier:KEYVALUE_IDENTIFIER options:nil completionHandler:^(NSDictionary *item, NSError *error) {
+                NSString *encoded = [[NSString alloc]
+                                    initWithData:[NSJSONSerialization
+                                                  dataWithJSONObject:[item objectForKey:NSExtensionJavaScriptPreprocessingResultsKey]
+                                                  options:0
+                                                  error:&error]
+                                    encoding:(NSUTF8StringEncoding)];
+                if (callback) {
+                    callback(encoded, @"application/json", nil);
+                }
+            }];
+        } else if(urlProvider) {
             [urlProvider loadItemForTypeIdentifier:URL_IDENTIFIER options:nil completionHandler:^(id<NSSecureCoding> item, NSError *error) {
                 NSURL *url = (NSURL *)item;
 
