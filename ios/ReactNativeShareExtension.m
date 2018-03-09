@@ -32,18 +32,26 @@ RCT_EXPORT_MODULE();
     if (rootView.backgroundColor == nil) {
         rootView.backgroundColor = [[UIColor alloc] initWithRed:1 green:1 blue:1 alpha:0.1];
     }
-
-    self.view = rootView;
     
+    self.view = rootView;
 }
 
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    
+    self.view.transform = CGAffineTransformMakeTranslation(0, self.view.frame.size.height);
+    [UIView animateWithDuration:0.25 animations:^
+     {
+         self.view.transform = CGAffineTransformIdentity;
+     }];
+}
 
 RCT_EXPORT_METHOD(close) {
     dispatch_async(dispatch_get_main_queue(), ^{
-        [UIView animateWithDuration:0.3
+        [UIView animateWithDuration:0.2
                          animations:^(void){
                              CGRect rect = rootView.frame;
-                             rect.origin.y = 2 * rect.size.height;
+                             rect.origin.y = rect.size.height;
                              rootView.frame = rect;
                          }
                          completion:^(BOOL finished){
@@ -53,8 +61,6 @@ RCT_EXPORT_METHOD(close) {
                          }];
     });
 }
-
-
 
 RCT_REMAP_METHOD(data,
                  resolver:(RCTPromiseResolveBlock)resolve
